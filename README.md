@@ -1,6 +1,6 @@
-# Epsilon Q&A Bot
+# AbzumsAI Q&A Bot
 
-This is a Telegram bot for answering questions about Epsilon Educational Institute. The bot provides a list of predefined questions and their answers. Users can get answers by sending the question number, the full question text, or part of the question. It also lets users submit feature suggestions and institute improvement ideas.
+This is a Telegram bot for answering questions about AbzumsAI Educational Institute. The bot provides a list of predefined questions and their answers. Users can get answers by sending the question number, the full question text, or part of the question. It also lets users submit feature suggestions and institute improvement ideas.
 
 ## Features
 
@@ -16,7 +16,7 @@ This is a Telegram bot for answering questions about Epsilon Educational Institu
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/Epsilon-Group/QA-Bot.git
+   git clone https://github.com/AbzumsAI/QA-Bot.git
    cd QA-Bot
    ```
 
