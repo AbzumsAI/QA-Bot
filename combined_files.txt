@@ -1,0 +1,1317 @@
+.\.env
+
+TELEGRAM_API_TOKEN="7802217313:AAEowhRCA8eBYALbr3t09yIyCaEWgOloXU4"
+ADMIN_CHAT_ID="988843615"
+INSTITUTE_CHAT_ID="988843615"
+
+.\.gitignore
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+ENV/
+env/
+venv.bak/
+env.bak/
+.env
+.idea/
+.vscode/
+.mypy_cache/
+.dmypy.json
+*.log
+
+
+.\LICENSE
+
+MIT License
+
+Copyright (c) 2025 AbzumsAI-Group
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+.\main.py
+
+import os
+import time
+import requests
+import random
+from dotenv import load_dotenv
+from qa import qa
+
+load_dotenv()
+TOKEN = os.getenv("TELEGRAM_API_TOKEN")
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
+INSTITUTE_CHAT_ID = os.getenv("INSTITUTE_CHAT_ID")
+BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
+
+def get_updates(offset=None):
+    url = f"{BASE_URL}/getUpdates"
+    params = {}
+    if offset:
+        params["offset"] = offset
+    r = requests.get(url, params=params)
+    return r.json()
+
+def send_message(chat_id, text, reply_markup=None):
+    url = f"{BASE_URL}/sendMessage"
+    params = {"chat_id": chat_id, "text": text}
+    if reply_markup:
+        params["reply_markup"] = reply_markup
+    requests.get(url, params=params)
+
+def forward_message(to_chat_id, from_chat_id, message_id):
+    url = f"{BASE_URL}/forwardMessage"
+    params = {
+        "chat_id": to_chat_id,
+        "from_chat_id": from_chat_id,
+        "message_id": message_id
+    }
+    requests.get(url, params=params)
+
+def main():
+    offset = None
+    while True:
+        updates = get_updates(offset)
+        if updates.get("ok"):
+            for update in updates["result"]:
+                offset = update["update_id"] + 1
+                message = update.get("message")
+                if not message:
+                    continue
+                chat_id = message["chat"]["id"]
+                text = message.get("text", "").strip()
+                if text == "/start":
+                    start_text = (
+                        "سلام!\n\n"
+                        "به بات پرسش و پاسخ موسسه آموزشی اپسیلون خوش آمدید.\n\n"
+                        "این بات به شما امکان می‌دهد تا به سادگی از میان سوالات از پیش تعریف‌شده، "
+                        "یا با ارسال شماره، متن کامل یا بخشی از سوال، پاسخ مورد نظر خود را دریافت کنید.\n\n"
+                        "برای مشاهده راهنما و دستورات موجود، دستور help را ارسال کنید.\n"
+                        "همچنین در صورت تمایل به ارسال پیشنهاد برای فیچرهای جدید، از دستور newfeature استفاده نمایید. "
+                        "پیشنهاد شما برای سازنده بات ارسال خواهد شد.\n\n"
+                        "اگر پیشنهادی برای بهبود موسسه آموزشی اپسیلون دارید، می‌توانید از دستور newsuggestion استفاده کنید.\n\n"
+                    )
+                    send_message(chat_id, start_text)
+                    continue
+                if text == "/help":
+                    help_text = (
+                        "دستورات موجود:\n\n"
+                        "start\n"
+                        "نمایش پیام خوش‌آمدگویی و توضیحات کامل درباره بات و نحوه استفاده.\n\n"
+                        "help\n"
+                        "نمایش راهنمای دستورات و توضیحات نحوه پرسیدن سوال.\n\n"
+                         "questions\n"
+                        "نمایش لیست سوالات از پیش تعریف‌شده به همراه دستورالعمل استفاده.\n\n"
+                        "random\n"
+                        "دریافت یک پرسش و پاسخ تصادفی با فاصله مناسب بین سوال و پاسخ.\n\n"
+                        "search\n"
+                        "جستجو در سوالات بر اساس کلمه کلیدی (مثال: search ریاضی).\n\n"
+                        "newfeature\n"
+                        "ارسال پیشنهاد فیچر جدید به سازنده بات به صورت فوروارد (مثال: newfeature پیشنهاد بهبود).\n\n"
+                        "newsuggestion\n"
+                        "ارسال پیشنهاد بهبود برای موسسه آموزشی اپسیلون به صورت فوروارد (مثال: newsuggestion پیشنهاد بهبود).\n\n"
+                        "برای دریافت پاسخ از سوالات، شما می‌توانید:\n"
+                        "1. شماره سوال را ارسال کنید (مثلاً 1 برای سوال اول)،\n"
+                        "2. متن کامل سوال را وارد کنید، یا\n"
+                        "3. بخشی از سوال را ارسال کنید تا در میان سوالات جستجو شود.\n"
+                    )
+                    send_message(chat_id, help_text)
+                    continue
+                if text == "/questions":
+                    qlist = "لیست سوالات (برای دریافت پاسخ، شماره یا متن سوال را ارسال کنید):\n\n"
+                    questions = list(qa.keys())
+                    for i, q in enumerate(questions, 1):
+                        qlist += f"{i}. {q}\n"
+                    send_message(chat_id, qlist)
+                    continue
+                if text == "/random":
+                    questions = list(qa.keys())
+                    random_question = random.choice(questions)
+                    answer = qa[random_question]
+                    send_message(chat_id, f"سوال: {random_question}\n\nپاسخ: {answer}")
+                    continue
+                if text.startswith("/search"):
+                    parts = text.split(maxsplit=1)
+                    if len(parts) < 2 or not parts[1].strip():
+                        send_message(chat_id, "برای استفاده از دستور search، باید پس از کلمه search، کلمه کلیدی را وارد کنید.\nمثال: search ریاضی")
+                        continue
+                    keyword = parts[1].strip().lower()
+                    matching = [q for q in qa.keys() if keyword in q.lower()]
+                    if matching:
+                        result = "سوالات پیدا شده:\n\n"
+                        for i, q in enumerate(matching, 1):
+                            result += f"{i}. {q}\n"
+                        send_message(chat_id, result)
+                    else:
+                        send_message(chat_id, "سوالی با این کلمه کلیدی یافت نشد.")
+                    continue
+                if text.startswith("/newfeature"):
+                    parts = text.split(maxsplit=1)
+                    if len(parts) < 2 or not parts[1].strip():
+                        send_message(chat_id, "برای ارسال پیشنهاد فیچر جدید، دستور را به صورت:\nnewfeature متن پیشنهاد\nارسال کنید.")
+                        continue
+                    forward_message(ADMIN_CHAT_ID, chat_id, message["message_id"])
+                    send_message(chat_id, "پیشنهاد شما برای بهبود بات با موفقیت ارسال شد. سپاسگزاریم.")
+                    continue
+                if text.startswith("/newsuggestion"):
+                    parts = text.split(maxsplit=1)
+                    if len(parts) < 2 or not parts[1].strip():
+                        send_message(chat_id, "برای ارسال پیشنهاد بهبود برای موسسه، دستور را به صورت:\nnewsuggestion متن پیشنهاد\nارسال کنید.")
+                        continue
+                    forward_message(INSTITUTE_CHAT_ID, chat_id, message["message_id"])
+                    send_message(chat_id, "پیشنهاد شما برای بهبود موسسه آموزشی اپسیلون با موفقیت ارسال شد. سپاسگزاریم.")
+                    continue
+                if text.isdigit():
+                    idx = int(text) - 1
+                    questions = list(qa.keys())
+                    if 0 <= idx < len(questions):
+                        selected_question = questions[idx]
+                        send_message(chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
+                        continue
+                matching = [q for q in qa.keys() if text.lower() in q.lower()]
+                if matching:
+                    if len(matching) == 1:
+                        selected_question = matching[0]
+                        send_message(chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
+                    else:
+                        result = "سوالات مشابه پیدا شده:\n\n"
+                        for i, q in enumerate(matching, 1):
+                            result += f"{i}. {q}\n"
+                        send_message(chat_id, result)
+                else:
+                    send_message(chat_id, "جوابی برای این سوال موجود نیست.")
+        time.sleep(1)
+
+if __name__ == "__main__":
+    main()
+
+.\mainnnnn.py
+
+import os
+
+def collect_all_files(directory, output_file):
+    files_to_write = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            files_to_write.append(file_path)
+
+    script_name = os.path.basename(__file__)
+    
+    with open(output_file, 'w', encoding='utf-8') as out_file:
+        for file_path in files_to_write:
+            if os.path.basename(file_path) == script_name:
+                ConnectionRefusedError
+
+            out_file.write(f"{file_path}\n\n")
+            
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    out_file.write(content + "\n\n")
+            except Exception as e:
+                out_file.write(f"Error reading {file_path}: {str(e)}\n\n")
+                
+    print(f"All files except the script itself have been written to {output_file}")
+
+directory = '.'
+output_file = 'combined_files.txt'
+collect_all_files(directory, output_file)
+
+
+.\qa.py
+
+qa = {
+"موسسه آموزشی اپسیلون در چه زمینه‌ای فعالیت دارد؟": "موسسه‌ی آموزشی اپسیلون در حوزه‌های مشاوره و برنامه‌ریزی کنکور، برگزاری کلاس‌های تقویتی و آموزشی از سال ۱۳۹۸ فعالیت خود را با کادری مجرب و کار آزموده آغاز نمود.",
+"قبولی‌های موسسه آموزشی اپسیلون را کجا ببینیم؟": "داخل سایت اپسیلون https://epsilongroup.ir، کانال تلگرامی https://t.me/epsilongroup_ir و اکانت اینستاگرام https://instagram.com/epsilongroup.ir می‌توانید قبولی‌های موسسه آموزشی اپسیلون را ببینید.",
+"مهندس پیمان شهبازی چه کسی است؟": "پیمان شهبازی، فارغ‌التحصیل سال ۱۳۸۹ مدرسه‌ی شهید اژه‌ای ۱، رتبه‌ی ۲۶ کنکور همون سال، ورودی مهندسی برق دانشگاه صنعتی شریف، لیسانس دو رشته‌ی برق و ریاضی، رتبه‌ی ۹ کنکور ارشد سال ۱۳۹۵، فوق لیسانس رشته‌ی ریاضی کاربردی و در حال حاضر هم دانشجوی دکتری ریاضی کاربردی-رمزنگاری در دانشگاه صنعتی اصفهان است. مهندس شهبازی ۸ سال سابقه‌ی تدریس در مدارس تیزهوشان و عموم مدارس استان اصفهان و ۹ سال سابقه‌ی مشاوره‌ی تحصیلی دارند و در زمینه‌ی ریاضیات نیز، ۲ مدال نقره‌ی کشور در مسابقات ریاضی و یک مدال برنز، یک مدال نقره و یک مدال طلا در مسابقات جهانی ریاضی کشور بلغارستان دارند. سابقه‌ی تدریس ریاضی و فیزیک در مدارس شهید اژه‌ای، فرزانگان، امام باقر و مدارس برتر اصفهان را نیز دارند. آمار قبولی‌ها نیز در سایت مجموعه‌ی آموزشی اپسیلون قرار دارد.",
+"مهندس پیمان شهبازی چند سال است که مشاوره کار می‌کنند؟": "مهندس شهبازی از سال ۱۳۹۴ مشاوره‌ی تحصیلی را آغاز کردند. از سال ۱۳۹۹ نیز مجموعه ادغام شد و به عنوان مجموعه‌ی اپسیلون، کلیت کار مشاوره‌ی تحصیلی و باقی مسائل مربوط به کنکور آغاز به کار کردند.",
+"چطوری می‌تونیم جلسه‌ی معارفه در اپسیلون داشته باشیم؟": "اطلاعات دانش‌آموز از جمله نام، نام خانوادگی، پایه‌ی تحصیلی، رشته‌ی تحصیلی، شماره تلفن، نام مدرسه و معدل تحصیلی دانش‌آموز در مقطع تحصیلی حال حاضر و مقطع تحصیلی قبلی را به شماره دفتر 09135425256 (@epsilon_office1) در تلگرام ارسال کنید.",
+"جلسه‌ی معارفه چقدر هزینه دارد؟": "جلسه‌ی معارفه در موسسه آموزشی اپسیلون، هزینه‌ای ندارد و رایگان است.",
+"بودجه‌ی آزمون ورودی اپسیلون کجا قرار دارد؟": "بودجه‌ی آزمون، در کانال معارفه‌ی موسسه آموزشی اپسیلون (@epsilonstart) قرار دارد.",
+"اگر آزمون اول اپسیلون را قبول نشویم، از لیست دانش‌آموزان اپسیلون حذف می‌شویم؟": "تا سه بار فرصت آزمون دادن دارید. هر موقع بودجه را مطالعه کردید، می‌تونید آزمون بدید. محدودیت زمان نداره و دست خودتون هست. برای مثال اگر آزمون یک را دادید و قبول نشدید، آزمون دو را مطالعه می‌کنید و هر موقع خواستید، زمان می‌گیرید و می‌آیید آزمون می‌دهید و همین‌طور اگر قبول نشدید، برای آزمون سه مطالعه می‌کنید.",
+"برای ورود به موسسه، چند بار می‌تونیم آزمون ابتدایی اپسیلون را بدهیم؟": "برای ورود به موسسه، سه بار می‌توانید آزمون ابتدایی اپسیلون را بدهید.",
+"ثبت‌نام در مجموعه‌ی آموزشی اپسیلون به چه صورت است؟": "بعد از انجام جلسه‌ی معارفه و قبولی در آزمون داخل سایت، می‌توانید ثبت‌نام کنید و پرداخت را انجام دهید.",
+"هزینه‌های ثبت‌نام در مجموعه‌ی آموزشی اپسیلون به چه صورت است؟": "هزینه‌های مشاوره را پس از ثبت‌نام در سایت epsilongroup.ir، در بخش محصول‌ها می‌توانید مشاهده کنید.",
+"روند مشاوره در مجموعه‌ی آموزشی اپسیلون به چه صورتی است؟": "روند به این شکل است که قبل جلسه‌ی آزمون تک‌درس، سپس مشاوره و برنامه‌ریزی صورت می‌گیرد. سپس هر شب پشتیبان تماس می‌گیرد و گزارش کار دانش‌آموز را داخل سایت ثبت می‌کند.",
+"مشاوران موسسه‌ی آموزشی اپسیلون چه کسانی هستند؟": "مشاور ارشد مجموعه مهندس پیمان شهبازی هستند و در کنار ایشان نیز، مشاوران دیگری از جمله رتبه برترهای کنکورهای سال‌های اخیر، فعالیت می‌کنند.",
+"آدرس موسسه‌ی آموزشی اپسیلون کجا است؟": "آدرس موسسه آموزشی اپسیلون: چهار راه هشت بهشت، بزرگمهر، به سمت احمد آباد، اولین کوچه سمت راست کوچه زرین، ۵۰ متر داخل کوچه، سمت چپ، بن بست آتوسا، انتهای بن بست پلاک ۱۵، مجتمع آموزشی اپسیلون",
+"پانسیون جهت حضور و مطالعه‌ی روزمره دارید در مجموعه‌ی آموزشی اپسیلون؟": "بله، کمپ مطالعاتی ماراتن، زیرمجموعه موسسه آموزشی اپسیلون با سابقه‌ای درخشان محیطی مناسب را برای درس خواندن دانش‌آموزان فراهم کرده است. اطلاعات پانسیون را می‌توانید از این شماره 09058844973 در تلگرام می‌توانید دریافت کنید.",
+"شماره‌ی مدیریت پانسیون اپسیلون چیست؟": "این شماره 09058844973 شماره‌ی مسئول اپسیلون است که می‌توانید با ایشان در تلگرام در ارتباط باشید.",
+"برای دریافت زمان معارفه در مجموعه‌ی آموزشی اپسیلون، چه اطلاعاتی باید ارسال شود؟": "برای دریافت زمان معارفه در مجموعه‌ی آموزشی اپسیلون، نام، نام خانوادگی، پایه‌ی تحصیلی، رشته‌ی تحصیلی، شماره تلفن، نام مدرسه و معدل تحصیلی خودتون در مقطع تحصیلی حال حاضر و مقطع تحصیلی قبلی را به این اکانت https://t.me/epsilon_office1 در تلگرام ارسال کنید.",
+"برای ثبت‌نام در پانسیون کمپ مطالعاتی ماراتن چیکار کنیم؟": "برای ثبت‌نام، به مدیریت پانسیون پیام دهید. می‌توانید به این شماره 09058844973 در تلگرام و یا به شکل پیامکی، پیام دهید. آی‌دی تلگرام مسئول پانسیون: https://t.me/AHS8000",
+"محیط مناسب درس خواندن در کمپ مطالعاتی ماراتن چطوری فراهم می‌شود؟": "میز، صندلی و کمد اختصاصی برای هر دانش‌آموز فراهم شده است. با حضور دانش‌آموزان برتر اصفهان و ایجاد فضای رقابتی، کیفیت پانسیلون بالاتر می‌رود. محیط، آرام و بی‌سر و صدا، مناسب خواندن هر چه بهتر دروس است. مشخص کردن ساعت کاری و تایم‌بندی مناسب برای انواع طیف دانش‌آموزان نیز انجام داده‌ایم.",
+"نظم و مقررات کمپ مطالعاتی ماراتن به چه شکل است؟": "حضور مراقبان آموزش‌دیده به صورت تمام وقت، حضور و غیاب توسط سیستم اثر انگشت و همچنین توسط مراقبین و اطلاع‌رسانی حضور غیاب دانش‌آموزان به والدین",
+"امکانات رفاهی کمپ مطالعاتی ماراتن به چه شکل است؟": "آشپزخانه‌ی مجهز به مایکرویو، آب‌سردکن، یخچال و باقی موارد. فضای سبز و حیاط رو باز مناسب مطالعه در فضای آزاد، سیستم سرمایشی و گرمایشی مناسب، نهایتا محل مناسب برای استراحت دانش آموزان",
+"جایزه‌ و تخفیف‌های جذاب کمپ مطالعاتی ماراتن به چه شکل است؟": "تخفیف ماهیانه برای دانش‌آموزان مشاوره اپسیلون، جایزه برای قهرمان حضور (بیشترین ساعت حضور ثبت شده توسط سیستم هوشمند حضور-غیاب)، جایزه ویژه برای نفرات برگزیده آزمون‌های ماهیانه",
+"نظافت مجموعه‌ی کمپ مطالعاتی ماراتن به چه شکل است؟": "نظافت مکرر پانسیون طبق برنامه هر هفته انجام می‌گردد. همچنین همه‌ی وسایل لازم مورد استفاده نیز برای هر میز و صندلی فراهم گردیده است.",
+"برنامه‌های آموزشی هفتگی ویژه اعضای کمپ مطالعاتی ماراتن به چه شکل است؟": "برگزاری کارگاه‌های تک‌مبحث درسی توسط اساتید مجرب انجام می‌گردد. جلسات انتقال تجربیات موثر با رتبه‌های برتر کنکور در طول سال برگزار می‌شود. برگزاری آزمون هماهنگ ماهیانه برای سنجش هر چه بهتر دانش‌آموزان نیز صورت می‌گیرد.",
+"امکانات دیگر کمپ مطالعاتی ماراتن چه مواردی هستند؟": "برنامه‌های تفریحی رایگان مجموعه‌ی کمپ مطالعاتی ماراتن برای دانش‌آموزان برگزار می‌گردد. دسترسی جامع به اینترنت سرعت بالا، میز و صندلی اختصاصی، کمد اختصاصی، مکان مجزا جهت استراحت و rest‌ نیز در پانسیون قرار دارد.",
+"آیا مشاوره برای رشته‌ی انسانی دارید؟": "خیر، فقط برای رشته‌های ریاضی و تجربی پایه‌های مختلف مشاوره داریم.",
+"آیا مشاوره برای هنرستان دارید؟": "خیر، فقط برای رشته‌های ریاضی و تجربی پایه‌های مختلف مشاوره داریم.",
+"آیا مشاوره برای پایه‌ی متوسط اول دارید؟": "بله، مشاوره برای متوسط پایه اول داریم. برنامه به این شکل هست که جلسات مشاوره هفتگی با دانش‌آموزها خواهیم داشت، ارائه‌ی برنامه‌ریزی درسی شخصی‌سازی شده مطابق با نیازهای دانش‌آموز صورت می‌گیره، آموزش بروزترین متدها و اصول مطالعه رو داریم در ادامه، در کنار این‌ها آموزش نحوه‌ی مطالعه دروس تحصیلی خواهیم داشت و معرفی معرفی برترین و بروزترین منابع همه دروس صورت خواهد گرفت. هر ماه آزمون خواهیم داشت و آزمون‌های هماهنگ برگزار می‌شه آخر هر ماه، چک‌آپ دانش‌آموزها توسط کوئیزهای مشخص نیز به‌مرور صورت می‌گیره.",
+"آیا مشاوره برای المپیاد‌های دانش‌آموزی دارید؟": "بله، مشاوره برای المپیادهای دانش‌آموزی داریم. برنامه به این شکل هست که جلسات مشاوره هفتگی با دانش‌آموزها خواهیم داشت، با هدف آموزش ماهیت کلی المپیاد، لینک کردن دانش‌آموزان با المپیادهای کشوری و جهانی و معرفی منابع بروز مناسب قبولی در المپیادها.",
+"برنامه‌‌ی آزمون‌های موسسه به چه شکل هست؟": "هر هفته قبل جلسه‌ی مشاوره، آزمون تک‌درس، هر چهارشنبه آزمون جامع مطابق با بودجه قلم‌چی، و هر سه ماه یک بار نیز آزمون تعیین سطح پیشرفت تحصیلی در موسسه برگزار می‌شود. آزمون‌های چهارشنبه به شکل مجازی و آزمون‌های تک‌درس و تعیین سطح پیشرفت تحصیلی به شکل حضوری برگزار می‌شوند."
+}
+
+
+.\README.md
+
+# AbzumsAI Q&A Bot
+
+This is a Telegram bot for answering questions about AbzumsAI Educational Institute. The bot provides a list of predefined questions and their answers. Users can get answers by sending the question number, the full question text, or part of the question. It also lets users submit feature suggestions and institute improvement ideas.
+
+## Features
+
+- **Start:** Sends a welcome message with instructions.
+- **Help:** Shows a list of all available commands and how to use them.
+- **Questions:** Displays a list of predefined questions.
+- **Random:** Returns a random question and answer.
+- **Search:** Lets you search for questions by a keyword. (Usage example: `search math`)
+- **Newfeature:** For sending a new feature suggestion. The original message is forwarded to the bot admin.
+- **Newsuggestion:** For sending improvement suggestions for the institute. This message is forwarded to the institute's chat.
+
+## Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/AbzumsAI/QA-Bot.git
+   cd QA-Bot
+   ```
+
+2. **Install the required packages:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Create a `.env` file in the project root with the following variables:**
+   ```
+   TELEGRAM_API_TOKEN=telegram_api_token_here
+   ADMIN_CHAT_ID=admin_chat_id_here
+   INSTITUTE_CHAT_ID=institute_chat_id_here
+   ```
+   To find your chat ID, you can use bots like [@userinfobot](https://t.me/userinfobot) or check the output of getUpdates.
+
+4. **Run the bot:**
+   ```bash
+   python main.py
+   ```
+
+## How to Use
+
+- **start** - Displays the welcome message and instructions.
+- **help** - Shows all available commands and explains how to ask questions.
+- **questions** - Lists all predefined questions. You can answer by sending the question number or text.
+- **random** - Sends a random question and its answer.
+- **search** - Searches questions by a given keyword (e.g., `search math`).
+- **newfeature** - Sends your feature suggestion to the bot admin (your suggestion is forwarded with your chat info).
+- **newsuggestion** - Sends your improvement suggestion for the institute to the institute's chat.
+
+Enjoy using the bot and feel free to contribute with suggestions!
+
+.\requirements.txt
+
+python-telegram-bot==13.15
+python-dotenv==0.20.0
+requests==2.28.2
+
+
+.\.git\COMMIT_EDITMSG
+
+Update Readme
+
+
+.\.git\config
+
+[core]
+	repositoryformatversion = 0
+	filemode = false
+	bare = false
+	logallrefupdates = true
+	symlinks = false
+	ignorecase = true
+[remote "origin"]
+	url = https://github.com/AbzumsAI/QA-Bot
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "main"]
+	remote = origin
+	merge = refs/heads/main
+
+
+.\.git\description
+
+Unnamed repository; edit this file 'description' to name the repository.
+
+
+.\.git\FETCH_HEAD
+
+dd5ecfb38ca7882aec1c6d7dc71c2ceb4a736fac		branch 'main' of https://github.com/AbzumsAI/QA-Bot
+
+
+.\.git\HEAD
+
+ref: refs/heads/main
+
+
+.\.git\index
+
+Error reading .\.git\index: 'utf-8' codec can't decode byte 0xa4 in position 13: invalid start byte
+
+.\.git\ORIG_HEAD
+
+dd5ecfb38ca7882aec1c6d7dc71c2ceb4a736fac
+
+
+.\.git\packed-refs
+
+# pack-refs with: peeled fully-peeled sorted 
+6cd18b18ee3697ad29fa8b9f1a0da1e4ca200ecf refs/remotes/origin/main
+
+
+.\.git\hooks\applypatch-msg.sample
+
+#!/bin/sh
+#
+# An example hook script to check the commit log message taken by
+# applypatch from an e-mail message.
+#
+# The hook should exit with non-zero status after issuing an
+# appropriate message if it wants to stop the commit.  The hook is
+# allowed to edit the commit message file.
+#
+# To enable this hook, rename this file to "applypatch-msg".
+
+. git-sh-setup
+commitmsg="$(git rev-parse --git-path hooks/commit-msg)"
+test -x "$commitmsg" && exec "$commitmsg" ${1+"$@"}
+:
+
+
+.\.git\hooks\commit-msg.sample
+
+#!/bin/sh
+#
+# An example hook script to check the commit log message.
+# Called by "git commit" with one argument, the name of the file
+# that has the commit message.  The hook should exit with non-zero
+# status after issuing an appropriate message if it wants to stop the
+# commit.  The hook is allowed to edit the commit message file.
+#
+# To enable this hook, rename this file to "commit-msg".
+
+# Uncomment the below to add a Signed-off-by line to the message.
+# Doing this in a hook is a bad idea in general, but the prepare-commit-msg
+# hook is more suited to it.
+#
+# SOB=$(git var GIT_AUTHOR_IDENT | sed -n 's/^\(.*>\).*$/Signed-off-by: \1/p')
+# grep -qs "^$SOB" "$1" || echo "$SOB" >> "$1"
+
+# This example catches duplicate Signed-off-by lines.
+
+test "" = "$(grep '^Signed-off-by: ' "$1" |
+	 sort | uniq -c | sed -e '/^[ 	]*1[ 	]/d')" || {
+	echo >&2 Duplicate Signed-off-by lines.
+	exit 1
+}
+
+
+.\.git\hooks\fsmonitor-watchman.sample
+
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use IPC::Open2;
+
+# An example hook script to integrate Watchman
+# (https://facebook.github.io/watchman/) with git to speed up detecting
+# new and modified files.
+#
+# The hook is passed a version (currently 2) and last update token
+# formatted as a string and outputs to stdout a new update token and
+# all files that have been modified since the update token. Paths must
+# be relative to the root of the working tree and separated by a single NUL.
+#
+# To enable this hook, rename this file to "query-watchman" and set
+# 'git config core.fsmonitor .git/hooks/query-watchman'
+#
+my ($version, $last_update_token) = @ARGV;
+
+# Uncomment for debugging
+# print STDERR "$0 $version $last_update_token\n";
+
+# Check the hook interface version
+if ($version ne 2) {
+	die "Unsupported query-fsmonitor hook version '$version'.\n" .
+	    "Falling back to scanning...\n";
+}
+
+my $git_work_tree = get_working_dir();
+
+my $retry = 1;
+
+my $json_pkg;
+eval {
+	require JSON::XS;
+	$json_pkg = "JSON::XS";
+	1;
+} or do {
+	require JSON::PP;
+	$json_pkg = "JSON::PP";
+};
+
+launch_watchman();
+
+sub launch_watchman {
+	my $o = watchman_query();
+	if (is_work_tree_watched($o)) {
+		output_result($o->{clock}, @{$o->{files}});
+	}
+}
+
+sub output_result {
+	my ($clockid, @files) = @_;
+
+	# Uncomment for debugging watchman output
+	# open (my $fh, ">", ".git/watchman-output.out");
+	# binmode $fh, ":utf8";
+	# print $fh "$clockid\n@files\n";
+	# close $fh;
+
+	binmode STDOUT, ":utf8";
+	print $clockid;
+	print "\0";
+	local $, = "\0";
+	print @files;
+}
+
+sub watchman_clock {
+	my $response = qx/watchman clock "$git_work_tree"/;
+	die "Failed to get clock id on '$git_work_tree'.\n" .
+		"Falling back to scanning...\n" if $? != 0;
+
+	return $json_pkg->new->utf8->decode($response);
+}
+
+sub watchman_query {
+	my $pid = open2(\*CHLD_OUT, \*CHLD_IN, 'watchman -j --no-pretty')
+	or die "open2() failed: $!\n" .
+	"Falling back to scanning...\n";
+
+	# In the query expression below we're asking for names of files that
+	# changed since $last_update_token but not from the .git folder.
+	#
+	# To accomplish this, we're using the "since" generator to use the
+	# recency index to select candidate nodes and "fields" to limit the
+	# output to file names only. Then we're using the "expression" term to
+	# further constrain the results.
+	if (substr($last_update_token, 0, 1) eq "c") {
+		$last_update_token = "\"$last_update_token\"";
+	}
+	my $query = <<"	END";
+		["query", "$git_work_tree", {
+			"since": $last_update_token,
+			"fields": ["name"],
+			"expression": ["not", ["dirname", ".git"]]
+		}]
+	END
+
+	# Uncomment for debugging the watchman query
+	# open (my $fh, ">", ".git/watchman-query.json");
+	# print $fh $query;
+	# close $fh;
+
+	print CHLD_IN $query;
+	close CHLD_IN;
+	my $response = do {local $/; <CHLD_OUT>};
+
+	# Uncomment for debugging the watch response
+	# open ($fh, ">", ".git/watchman-response.json");
+	# print $fh $response;
+	# close $fh;
+
+	die "Watchman: command returned no output.\n" .
+	"Falling back to scanning...\n" if $response eq "";
+	die "Watchman: command returned invalid output: $response\n" .
+	"Falling back to scanning...\n" unless $response =~ /^\{/;
+
+	return $json_pkg->new->utf8->decode($response);
+}
+
+sub is_work_tree_watched {
+	my ($output) = @_;
+	my $error = $output->{error};
+	if ($retry > 0 and $error and $error =~ m/unable to resolve root .* directory (.*) is not watched/) {
+		$retry--;
+		my $response = qx/watchman watch "$git_work_tree"/;
+		die "Failed to make watchman watch '$git_work_tree'.\n" .
+		    "Falling back to scanning...\n" if $? != 0;
+		$output = $json_pkg->new->utf8->decode($response);
+		$error = $output->{error};
+		die "Watchman: $error.\n" .
+		"Falling back to scanning...\n" if $error;
+
+		# Uncomment for debugging watchman output
+		# open (my $fh, ">", ".git/watchman-output.out");
+		# close $fh;
+
+		# Watchman will always return all files on the first query so
+		# return the fast "everything is dirty" flag to git and do the
+		# Watchman query just to get it over with now so we won't pay
+		# the cost in git to look up each individual file.
+		my $o = watchman_clock();
+		$error = $output->{error};
+
+		die "Watchman: $error.\n" .
+		"Falling back to scanning...\n" if $error;
+
+		output_result($o->{clock}, ("/"));
+		$last_update_token = $o->{clock};
+
+		eval { launch_watchman() };
+		return 0;
+	}
+
+	die "Watchman: $error.\n" .
+	"Falling back to scanning...\n" if $error;
+
+	return 1;
+}
+
+sub get_working_dir {
+	my $working_dir;
+	if ($^O =~ 'msys' || $^O =~ 'cygwin') {
+		$working_dir = Win32::GetCwd();
+		$working_dir =~ tr/\\/\//;
+	} else {
+		require Cwd;
+		$working_dir = Cwd::cwd();
+	}
+
+	return $working_dir;
+}
+
+
+.\.git\hooks\post-update.sample
+
+#!/bin/sh
+#
+# An example hook script to prepare a packed repository for use over
+# dumb transports.
+#
+# To enable this hook, rename this file to "post-update".
+
+exec git update-server-info
+
+
+.\.git\hooks\pre-applypatch.sample
+
+#!/bin/sh
+#
+# An example hook script to verify what is about to be committed
+# by applypatch from an e-mail message.
+#
+# The hook should exit with non-zero status after issuing an
+# appropriate message if it wants to stop the commit.
+#
+# To enable this hook, rename this file to "pre-applypatch".
+
+. git-sh-setup
+precommit="$(git rev-parse --git-path hooks/pre-commit)"
+test -x "$precommit" && exec "$precommit" ${1+"$@"}
+:
+
+
+.\.git\hooks\pre-commit.sample
+
+#!/bin/sh
+#
+# An example hook script to verify what is about to be committed.
+# Called by "git commit" with no arguments.  The hook should
+# exit with non-zero status after issuing an appropriate message if
+# it wants to stop the commit.
+#
+# To enable this hook, rename this file to "pre-commit".
+
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=$(git hash-object -t tree /dev/null)
+fi
+
+# If you want to allow non-ASCII filenames set this variable to true.
+allownonascii=$(git config --type=bool hooks.allownonascii)
+
+# Redirect output to stderr.
+exec 1>&2
+
+# Cross platform projects tend to avoid non-ASCII filenames; prevent
+# them from being added to the repository. We exploit the fact that the
+# printable range starts at the space character and ends with tilde.
+if [ "$allownonascii" != "true" ] &&
+	# Note that the use of brackets around a tr range is ok here, (it's
+	# even required, for portability to Solaris 10's /usr/bin/tr), since
+	# the square bracket bytes happen to fall in the designated range.
+	test $(git diff --cached --name-only --diff-filter=A -z $against |
+	  LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
+then
+	cat <<\EOF
+Error: Attempt to add a non-ASCII file name.
+
+This can cause problems if you want to work with people on other platforms.
+
+To be portable it is advisable to rename the file.
+
+If you know what you are doing you can disable this check using:
+
+  git config hooks.allownonascii true
+EOF
+	exit 1
+fi
+
+# If there are whitespace errors, print the offending file names and fail.
+exec git diff-index --check --cached $against --
+
+
+.\.git\hooks\pre-merge-commit.sample
+
+#!/bin/sh
+#
+# An example hook script to verify what is about to be committed.
+# Called by "git merge" with no arguments.  The hook should
+# exit with non-zero status after issuing an appropriate message to
+# stderr if it wants to stop the merge commit.
+#
+# To enable this hook, rename this file to "pre-merge-commit".
+
+. git-sh-setup
+test -x "$GIT_DIR/hooks/pre-commit" &&
+        exec "$GIT_DIR/hooks/pre-commit"
+:
+
+
+.\.git\hooks\pre-push.sample
+
+#!/bin/sh
+
+# An example hook script to verify what is about to be pushed.  Called by "git
+# push" after it has checked the remote status, but before anything has been
+# pushed.  If this script exits with a non-zero status nothing will be pushed.
+#
+# This hook is called with the following parameters:
+#
+# $1 -- Name of the remote to which the push is being done
+# $2 -- URL to which the push is being done
+#
+# If pushing without using a named remote those arguments will be equal.
+#
+# Information about the commits which are being pushed is supplied as lines to
+# the standard input in the form:
+#
+#   <local ref> <local oid> <remote ref> <remote oid>
+#
+# This sample shows how to prevent push of commits where the log message starts
+# with "WIP" (work in progress).
+
+remote="$1"
+url="$2"
+
+zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+
+while read local_ref local_oid remote_ref remote_oid
+do
+	if test "$local_oid" = "$zero"
+	then
+		# Handle delete
+		:
+	else
+		if test "$remote_oid" = "$zero"
+		then
+			# New branch, examine all commits
+			range="$local_oid"
+		else
+			# Update to existing branch, examine new commits
+			range="$remote_oid..$local_oid"
+		fi
+
+		# Check for WIP commit
+		commit=$(git rev-list -n 1 --grep '^WIP' "$range")
+		if test -n "$commit"
+		then
+			echo >&2 "Found WIP commit in $local_ref, not pushing"
+			exit 1
+		fi
+	fi
+done
+
+exit 0
+
+
+.\.git\hooks\pre-rebase.sample
+
+#!/bin/sh
+#
+# Copyright (c) 2006, 2008 Junio C Hamano
+#
+# The "pre-rebase" hook is run just before "git rebase" starts doing
+# its job, and can prevent the command from running by exiting with
+# non-zero status.
+#
+# The hook is called with the following parameters:
+#
+# $1 -- the upstream the series was forked from.
+# $2 -- the branch being rebased (or empty when rebasing the current branch).
+#
+# This sample shows how to prevent topic branches that are already
+# merged to 'next' branch from getting rebased, because allowing it
+# would result in rebasing already published history.
+
+publish=next
+basebranch="$1"
+if test "$#" = 2
+then
+	topic="refs/heads/$2"
+else
+	topic=`git symbolic-ref HEAD` ||
+	exit 0 ;# we do not interrupt rebasing detached HEAD
+fi
+
+case "$topic" in
+refs/heads/??/*)
+	;;
+*)
+	exit 0 ;# we do not interrupt others.
+	;;
+esac
+
+# Now we are dealing with a topic branch being rebased
+# on top of master.  Is it OK to rebase it?
+
+# Does the topic really exist?
+git show-ref -q "$topic" || {
+	echo >&2 "No such branch $topic"
+	exit 1
+}
+
+# Is topic fully merged to master?
+not_in_master=`git rev-list --pretty=oneline ^master "$topic"`
+if test -z "$not_in_master"
+then
+	echo >&2 "$topic is fully merged to master; better remove it."
+	exit 1 ;# we could allow it, but there is no point.
+fi
+
+# Is topic ever merged to next?  If so you should not be rebasing it.
+only_next_1=`git rev-list ^master "^$topic" ${publish} | sort`
+only_next_2=`git rev-list ^master           ${publish} | sort`
+if test "$only_next_1" = "$only_next_2"
+then
+	not_in_topic=`git rev-list "^$topic" master`
+	if test -z "$not_in_topic"
+	then
+		echo >&2 "$topic is already up to date with master"
+		exit 1 ;# we could allow it, but there is no point.
+	else
+		exit 0
+	fi
+else
+	not_in_next=`git rev-list --pretty=oneline ^${publish} "$topic"`
+	/usr/bin/perl -e '
+		my $topic = $ARGV[0];
+		my $msg = "* $topic has commits already merged to public branch:\n";
+		my (%not_in_next) = map {
+			/^([0-9a-f]+) /;
+			($1 => 1);
+		} split(/\n/, $ARGV[1]);
+		for my $elem (map {
+				/^([0-9a-f]+) (.*)$/;
+				[$1 => $2];
+			} split(/\n/, $ARGV[2])) {
+			if (!exists $not_in_next{$elem->[0]}) {
+				if ($msg) {
+					print STDERR $msg;
+					undef $msg;
+				}
+				print STDERR " $elem->[1]\n";
+			}
+		}
+	' "$topic" "$not_in_next" "$not_in_master"
+	exit 1
+fi
+
+<<\DOC_END
+
+This sample hook safeguards topic branches that have been
+published from being rewound.
+
+The workflow assumed here is:
+
+ * Once a topic branch forks from "master", "master" is never
+   merged into it again (either directly or indirectly).
+
+ * Once a topic branch is fully cooked and merged into "master",
+   it is deleted.  If you need to build on top of it to correct
+   earlier mistakes, a new topic branch is created by forking at
+   the tip of the "master".  This is not strictly necessary, but
+   it makes it easier to keep your history simple.
+
+ * Whenever you need to test or publish your changes to topic
+   branches, merge them into "next" branch.
+
+The script, being an example, hardcodes the publish branch name
+to be "next", but it is trivial to make it configurable via
+$GIT_DIR/config mechanism.
+
+With this workflow, you would want to know:
+
+(1) ... if a topic branch has ever been merged to "next".  Young
+    topic branches can have stupid mistakes you would rather
+    clean up before publishing, and things that have not been
+    merged into other branches can be easily rebased without
+    affecting other people.  But once it is published, you would
+    not want to rewind it.
+
+(2) ... if a topic branch has been fully merged to "master".
+    Then you can delete it.  More importantly, you should not
+    build on top of it -- other people may already want to
+    change things related to the topic as patches against your
+    "master", so if you need further changes, it is better to
+    fork the topic (perhaps with the same name) afresh from the
+    tip of "master".
+
+Let's look at this example:
+
+		   o---o---o---o---o---o---o---o---o---o "next"
+		  /       /           /           /
+		 /   a---a---b A     /           /
+		/   /               /           /
+	       /   /   c---c---c---c B         /
+	      /   /   /             \         /
+	     /   /   /   b---b C     \       /
+	    /   /   /   /             \     /
+    ---o---o---o---o---o---o---o---o---o---o---o "master"
+
+
+A, B and C are topic branches.
+
+ * A has one fix since it was merged up to "next".
+
+ * B has finished.  It has been fully merged up to "master" and "next",
+   and is ready to be deleted.
+
+ * C has not merged to "next" at all.
+
+We would want to allow C to be rebased, refuse A, and encourage
+B to be deleted.
+
+To compute (1):
+
+	git rev-list ^master ^topic next
+	git rev-list ^master        next
+
+	if these match, topic has not merged in next at all.
+
+To compute (2):
+
+	git rev-list master..topic
+
+	if this is empty, it is fully merged to "master".
+
+DOC_END
+
+
+.\.git\hooks\pre-receive.sample
+
+#!/bin/sh
+#
+# An example hook script to make use of push options.
+# The example simply echoes all push options that start with 'echoback='
+# and rejects all pushes when the "reject" push option is used.
+#
+# To enable this hook, rename this file to "pre-receive".
+
+if test -n "$GIT_PUSH_OPTION_COUNT"
+then
+	i=0
+	while test "$i" -lt "$GIT_PUSH_OPTION_COUNT"
+	do
+		eval "value=\$GIT_PUSH_OPTION_$i"
+		case "$value" in
+		echoback=*)
+			echo "echo from the pre-receive-hook: ${value#*=}" >&2
+			;;
+		reject)
+			exit 1
+		esac
+		i=$((i + 1))
+	done
+fi
+
+
+.\.git\hooks\prepare-commit-msg.sample
+
+#!/bin/sh
+#
+# An example hook script to prepare the commit log message.
+# Called by "git commit" with the name of the file that has the
+# commit message, followed by the description of the commit
+# message's source.  The hook's purpose is to edit the commit
+# message file.  If the hook fails with a non-zero status,
+# the commit is aborted.
+#
+# To enable this hook, rename this file to "prepare-commit-msg".
+
+# This hook includes three examples. The first one removes the
+# "# Please enter the commit message..." help message.
+#
+# The second includes the output of "git diff --name-status -r"
+# into the message, just before the "git status" output.  It is
+# commented because it doesn't cope with --amend or with squashed
+# commits.
+#
+# The third example adds a Signed-off-by line to the message, that can
+# still be edited.  This is rarely a good idea.
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+SHA1=$3
+
+/usr/bin/perl -i.bak -ne 'print unless(m/^. Please enter the commit message/..m/^#$/)' "$COMMIT_MSG_FILE"
+
+# case "$COMMIT_SOURCE,$SHA1" in
+#  ,|template,)
+#    /usr/bin/perl -i.bak -pe '
+#       print "\n" . `git diff --cached --name-status -r`
+# 	 if /^#/ && $first++ == 0' "$COMMIT_MSG_FILE" ;;
+#  *) ;;
+# esac
+
+# SOB=$(git var GIT_COMMITTER_IDENT | sed -n 's/^\(.*>\).*$/Signed-off-by: \1/p')
+# git interpret-trailers --in-place --trailer "$SOB" "$COMMIT_MSG_FILE"
+# if test -z "$COMMIT_SOURCE"
+# then
+#   /usr/bin/perl -i.bak -pe 'print "\n" if !$first_line++' "$COMMIT_MSG_FILE"
+# fi
+
+
+.\.git\hooks\push-to-checkout.sample
+
+#!/bin/sh
+
+# An example hook script to update a checked-out tree on a git push.
+#
+# This hook is invoked by git-receive-pack(1) when it reacts to git
+# push and updates reference(s) in its repository, and when the push
+# tries to update the branch that is currently checked out and the
+# receive.denyCurrentBranch configuration variable is set to
+# updateInstead.
+#
+# By default, such a push is refused if the working tree and the index
+# of the remote repository has any difference from the currently
+# checked out commit; when both the working tree and the index match
+# the current commit, they are updated to match the newly pushed tip
+# of the branch. This hook is to be used to override the default
+# behaviour; however the code below reimplements the default behaviour
+# as a starting point for convenient modification.
+#
+# The hook receives the commit with which the tip of the current
+# branch is going to be updated:
+commit=$1
+
+# It can exit with a non-zero status to refuse the push (when it does
+# so, it must not modify the index or the working tree).
+die () {
+	echo >&2 "$*"
+	exit 1
+}
+
+# Or it can make any necessary changes to the working tree and to the
+# index to bring them to the desired state when the tip of the current
+# branch is updated to the new commit, and exit with a zero status.
+#
+# For example, the hook can simply run git read-tree -u -m HEAD "$1"
+# in order to emulate git fetch that is run in the reverse direction
+# with git push, as the two-tree form of git read-tree -u -m is
+# essentially the same as git switch or git checkout that switches
+# branches while keeping the local changes in the working tree that do
+# not interfere with the difference between the branches.
+
+# The below is a more-or-less exact translation to shell of the C code
+# for the default behaviour for git's push-to-checkout hook defined in
+# the push_to_deploy() function in builtin/receive-pack.c.
+#
+# Note that the hook will be executed from the repository directory,
+# not from the working tree, so if you want to perform operations on
+# the working tree, you will have to adapt your code accordingly, e.g.
+# by adding "cd .." or using relative paths.
+
+if ! git update-index -q --ignore-submodules --refresh
+then
+	die "Up-to-date check failed"
+fi
+
+if ! git diff-files --quiet --ignore-submodules --
+then
+	die "Working directory has unstaged changes"
+fi
+
+# This is a rough translation of:
+#
+#   head_has_history() ? "HEAD" : EMPTY_TREE_SHA1_HEX
+if git cat-file -e HEAD 2>/dev/null
+then
+	head=HEAD
+else
+	head=$(git hash-object -t tree --stdin </dev/null)
+fi
+
+if ! git diff-index --quiet --cached --ignore-submodules $head --
+then
+	die "Working directory has staged changes"
+fi
+
+if ! git read-tree -u -m "$commit"
+then
+	die "Could not update working tree to new HEAD"
+fi
+
+
+.\.git\hooks\update.sample
+
+#!/bin/sh
+#
+# An example hook script to block unannotated tags from entering.
+# Called by "git receive-pack" with arguments: refname sha1-old sha1-new
+#
+# To enable this hook, rename this file to "update".
+#
+# Config
+# ------
+# hooks.allowunannotated
+#   This boolean sets whether unannotated tags will be allowed into the
+#   repository.  By default they won't be.
+# hooks.allowdeletetag
+#   This boolean sets whether deleting tags will be allowed in the
+#   repository.  By default they won't be.
+# hooks.allowmodifytag
+#   This boolean sets whether a tag may be modified after creation. By default
+#   it won't be.
+# hooks.allowdeletebranch
+#   This boolean sets whether deleting branches will be allowed in the
+#   repository.  By default they won't be.
+# hooks.denycreatebranch
+#   This boolean sets whether remotely creating branches will be denied
+#   in the repository.  By default this is allowed.
+#
+
+# --- Command line
+refname="$1"
+oldrev="$2"
+newrev="$3"
+
+# --- Safety check
+if [ -z "$GIT_DIR" ]; then
+	echo "Don't run this script from the command line." >&2
+	echo " (if you want, you could supply GIT_DIR then run" >&2
+	echo "  $0 <ref> <oldrev> <newrev>)" >&2
+	exit 1
+fi
+
+if [ -z "$refname" -o -z "$oldrev" -o -z "$newrev" ]; then
+	echo "usage: $0 <ref> <oldrev> <newrev>" >&2
+	exit 1
+fi
+
+# --- Config
+allowunannotated=$(git config --type=bool hooks.allowunannotated)
+allowdeletebranch=$(git config --type=bool hooks.allowdeletebranch)
+denycreatebranch=$(git config --type=bool hooks.denycreatebranch)
+allowdeletetag=$(git config --type=bool hooks.allowdeletetag)
+allowmodifytag=$(git config --type=bool hooks.allowmodifytag)
+
+# check for no description
+projectdesc=$(sed -e '1q' "$GIT_DIR/description")
+case "$projectdesc" in
+"Unnamed repository"* | "")
+	echo "*** Project description file hasn't been set" >&2
+	exit 1
+	;;
+esac
+
+# --- Check types
+# if $newrev is 0000...0000, it's a commit to delete a ref.
+zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+if [ "$newrev" = "$zero" ]; then
+	newrev_type=delete
+else
+	newrev_type=$(git cat-file -t $newrev)
+fi
+
+case "$refname","$newrev_type" in
+	refs/tags/*,commit)
+		# un-annotated tag
+		short_refname=${refname##refs/tags/}
+		if [ "$allowunannotated" != "true" ]; then
+			echo "*** The un-annotated tag, $short_refname, is not allowed in this repository" >&2
+			echo "*** Use 'git tag [ -a | -s ]' for tags you want to propagate." >&2
+			exit 1
+		fi
+		;;
+	refs/tags/*,delete)
+		# delete tag
+		if [ "$allowdeletetag" != "true" ]; then
+			echo "*** Deleting a tag is not allowed in this repository" >&2
+			exit 1
+		fi
+		;;
+	refs/tags/*,tag)
+		# annotated tag
+		if [ "$allowmodifytag" != "true" ] && git rev-parse $refname > /dev/null 2>&1
+		then
+			echo "*** Tag '$refname' already exists." >&2
+			echo "*** Modifying a tag is not allowed in this repository." >&2
+			exit 1
+		fi
+		;;
+	refs/heads/*,commit)
+		# branch
+		if [ "$oldrev" = "$zero" -a "$denycreatebranch" = "true" ]; then
+			echo "*** Creating a branch is not allowed in this repository" >&2
+			exit 1
+		fi
+		;;
+	refs/heads/*,delete)
+		# delete branch
+		if [ "$allowdeletebranch" != "true" ]; then
+			echo "*** Deleting a branch is not allowed in this repository" >&2
+			exit 1
+		fi
+		;;
+	refs/remotes/*,commit)
+		# tracking branch
+		;;
+	refs/remotes/*,delete)
+		# delete tracking branch
+		if [ "$allowdeletebranch" != "true" ]; then
+			echo "*** Deleting a tracking branch is not allowed in this repository" >&2
+			exit 1
+		fi
+		;;
+	*)
+		# Anything else (is there anything else?)
+		echo "*** Update hook: unknown type of update to ref $refname of type $newrev_type" >&2
+		exit 1
+		;;
+esac
+
+# --- Finished
+exit 0
+
+
+.\.git\info\exclude
+
+# git ls-files --others --exclude-from=.git/info/exclude
+# Lines that start with '#' are comments.
+# For a project mostly in C, the following would be a good set of
+# exclude patterns (uncomment them if you want to use them):
+# *.[oa]
+# *~
+
+
+.\.git\logs\HEAD
+
+0000000000000000000000000000000000000000 6cd18b18ee3697ad29fa8b9f1a0da1e4ca200ecf Imanm02 <imanm1381@gmail.com> 1738814724 +0330	clone: from https://github.com/Epsilon-Group/QA-Bot
+6cd18b18ee3697ad29fa8b9f1a0da1e4ca200ecf dd5ecfb38ca7882aec1c6d7dc71c2ceb4a736fac Imanm02 <imanm1381@gmail.com> 1738814833 +0330	commit: Update Readme
+
+
+.\.git\logs\refs\heads\main
+
+0000000000000000000000000000000000000000 6cd18b18ee3697ad29fa8b9f1a0da1e4ca200ecf Imanm02 <imanm1381@gmail.com> 1738814724 +0330	clone: from https://github.com/Epsilon-Group/QA-Bot
+6cd18b18ee3697ad29fa8b9f1a0da1e4ca200ecf dd5ecfb38ca7882aec1c6d7dc71c2ceb4a736fac Imanm02 <imanm1381@gmail.com> 1738814833 +0330	commit: Update Readme
+
+
+.\.git\logs\refs\remotes\origin\HEAD
+
+0000000000000000000000000000000000000000 6cd18b18ee3697ad29fa8b9f1a0da1e4ca200ecf Imanm02 <imanm1381@gmail.com> 1738814724 +0330	clone: from https://github.com/Epsilon-Group/QA-Bot
+
+
+.\.git\logs\refs\remotes\origin\main
+
+6cd18b18ee3697ad29fa8b9f1a0da1e4ca200ecf dd5ecfb38ca7882aec1c6d7dc71c2ceb4a736fac Imanm02 <imanm1381@gmail.com> 1738814837 +0330	update by push
+
+
+.\.git\objects\b3\09db00328b011f6d3b51e60aa6e88f244b7b3d
+
+Error reading .\.git\objects\b3\09db00328b011f6d3b51e60aa6e88f244b7b3d: 'utf-8' codec can't decode byte 0x8b in position 5: invalid start byte
+
+.\.git\objects\c0\9320ea097fd87139cfd70883dea4289085cff3
+
+Error reading .\.git\objects\c0\9320ea097fd87139cfd70883dea4289085cff3: 'utf-8' codec can't decode byte 0xd0 in position 18: invalid continuation byte
+
+.\.git\objects\db\65c3bccb84c001f9e0a0543bc887f676c1e5b8
+
+Error reading .\.git\objects\db\65c3bccb84c001f9e0a0543bc887f676c1e5b8: 'utf-8' codec can't decode byte 0x85 in position 2: invalid start byte
+
+.\.git\objects\dd\5ecfb38ca7882aec1c6d7dc71c2ceb4a736fac
+
+Error reading .\.git\objects\dd\5ecfb38ca7882aec1c6d7dc71c2ceb4a736fac: 'utf-8' codec can't decode byte 0x95 in position 2: invalid start byte
+
+.\.git\objects\pack\pack-0fe4c9994cf855d6ab4fca43d24fc49654f23da4.idx
+
+Error reading .\.git\objects\pack\pack-0fe4c9994cf855d6ab4fca43d24fc49654f23da4.idx: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte
+
+.\.git\objects\pack\pack-0fe4c9994cf855d6ab4fca43d24fc49654f23da4.pack
+
+Error reading .\.git\objects\pack\pack-0fe4c9994cf855d6ab4fca43d24fc49654f23da4.pack: 'utf-8' codec can't decode byte 0x9a in position 12: invalid start byte
+
+.\.git\refs\heads\main
+
+dd5ecfb38ca7882aec1c6d7dc71c2ceb4a736fac
+
+
+.\.git\refs\remotes\origin\HEAD
+
+ref: refs/remotes/origin/main
+
+
+.\.git\refs\remotes\origin\main
+
+dd5ecfb38ca7882aec1c6d7dc71c2ceb4a736fac
+
+
