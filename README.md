@@ -35,7 +35,7 @@ This is a Telegram bot for answering questions about AbzumsAI Educational Instit
 
 4. **Run the bot:**
    ```bash
-   python main.py
+   python bot.py
    ```
 
 ## How to Use
