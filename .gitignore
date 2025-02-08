@@ -19,10 +19,8 @@ var/
 *.egg
 venv/
 ENV/
-env/
 venv.bak/
 env.bak/
-.env
 .idea/
 .vscode/
 .mypy_cache/
