@@ -48,35 +48,37 @@ def main():
                 chat_id = message["chat"]["id"]
                 text = message.get("text", "").strip()
                 if text == "/start":
+
                     start_text = (
                         "سلام!\n\n"
                         "به بات پرسش و پاسخ اولین برنامه جامع آموزشی مقدمات هوش مصنوعی خوش آمدید.\n\n"
                         "این بات به شما امکان می‌دهد تا به سادگی از میان سوالات از پیش تعریف‌شده، "
                         "یا با ارسال شماره، متن کامل یا بخشی از سوال، پاسخ مورد نظر خود را دریافت کنید.\n\n"
-                        "برای مشاهده راهنما و دستورات موجود، دستور help را ارسال کنید.\n"
-                        "همچنین در صورت تمایل به ارسال پیشنهاد برای فیچرهای جدید، از دستور newfeature استفاده نمایید. "
+                        "برای مشاهده راهنما و دستورات موجود، دستور /help را ارسال کنید.\n"
+                        "همچنین در صورت تمایل به ارسال پیشنهاد برای فیچرهای جدید، از دستور /newfeature استفاده نمایید. "
                         "پیشنهاد شما برای سازنده بات ارسال خواهد شد.\n\n"
-                        "اگر پیشنهادی برای بهبود برنامه‌ی جامع آموزشی مقدمات هوش مصنوعی دارید، می‌توانید از دستور newsuggestion استفاده کنید.\n\n"
+                        "اگر پیشنهادی برای بهبود برنامه‌ی جامع آموزشی مقدمات هوش مصنوعی دارید، می‌توانید از دستور /newsuggestion استفاده کنید.\n\n"
                     )
                     send_message(chat_id, start_text)
+
                     continue
                 if text == "/help":
                     help_text = (
                         "دستورات موجود:\n\n"
-                        "start\n"
+                        "/start\n"
                         "نمایش پیام خوش‌آمدگویی و توضیحات کامل درباره بات و نحوه استفاده.\n\n"
-                        "help\n"
+                        "/help\n"
                         "نمایش راهنمای دستورات و توضیحات نحوه پرسیدن سوال.\n\n"
-                         "questions\n"
+                         "/questions\n"
                         "نمایش لیست سوالات از پیش تعریف‌شده به همراه دستورالعمل استفاده.\n\n"
-                        "random\n"
+                        "/random\n"
                         "دریافت یک پرسش و پاسخ تصادفی با فاصله مناسب بین سوال و پاسخ.\n\n"
-                        "search\n"
+                        "/search\n"
                         "جستجو در سوالات بر اساس کلمه کلیدی (مثال: search ریاضی).\n\n"
-                        "newfeature\n"
-                        "ارسال پیشنهاد فیچر جدید به سازنده بات به صورت فوروارد (مثال: newfeature پیشنهاد بهبود).\n\n"
-                        "newsuggestion\n"
-                        "ارسال پیشنهاد بهبود برای برنامه جامع آموزشی مقدمات هوش مصنوعی به صورت فوروارد (مثال: newsuggestion پیشنهاد بهبود).\n\n"
+                        "/newfeature\n"
+                        "ارسال پیشنهاد فیچر جدید به سازنده بات به صورت فوروارد (مثال: /newfeature پیشنهاد بهبود).\n\n"
+                        "/newsuggestion\n"
+                        "ارسال پیشنهاد بهبود برای برنامه جامع آموزشی مقدمات هوش مصنوعی به صورت فوروارد (مثال: /newsuggestion پیشنهاد بهبود).\n\n"
                         "برای دریافت پاسخ از سوالات، شما می‌توانید:\n"
                         "1. شماره سوال را ارسال کنید (مثلاً 1 برای سوال اول)،\n"
                         "2. متن کامل سوال را وارد کنید، یا\n"
@@ -100,7 +102,7 @@ def main():
                 if text.startswith("/search"):
                     parts = text.split(maxsplit=1)
                     if len(parts) < 2 or not parts[1].strip():
-                        send_message(chat_id, "برای استفاده از دستور search، باید پس از کلمه search، کلمه کلیدی را وارد کنید.\nمثال: search ریاضی")
+                        send_message(chat_id, "برای استفاده از دستور /search، باید پس از کلمه /search، کلمه کلیدی را وارد کنید.\nمثال: /search ریاضی")
                         continue
                     keyword = parts[1].strip().lower()
                     matching = [q for q in qa.keys() if keyword in q.lower()]
@@ -115,7 +117,7 @@ def main():
                 if text.startswith("/newfeature"):
                     parts = text.split(maxsplit=1)
                     if len(parts) < 2 or not parts[1].strip():
-                        send_message(chat_id, "برای ارسال پیشنهاد فیچر جدید، دستور را به صورت:\nnewfeature متن پیشنهاد\nارسال کنید.")
+                        send_message(chat_id, "برای ارسال پیشنهاد فیچر جدید، دستور را به صورت:\n/newfeature متن پیشنهاد\nارسال کنید.")
                         continue
                     forward_message(ADMIN_CHAT_ID, chat_id, message["message_id"])
                     send_message(chat_id, "پیشنهاد شما برای بهبود بات با موفقیت ارسال شد. سپاسگزاریم.")
@@ -123,7 +125,7 @@ def main():
                 if text.startswith("/newsuggestion"):
                     parts = text.split(maxsplit=1)
                     if len(parts) < 2 or not parts[1].strip():
-                        send_message(chat_id, "برای ارسال پیشنهاد بهبود برای موسسه، دستور را به صورت:\nnewsuggestion متن پیشنهاد\nارسال کنید.")
+                        send_message(chat_id, "برای ارسال پیشنهاد بهبود برای موسسه، دستور را به صورت:\n/newsuggestion متن پیشنهاد\nارسال کنید.")
                         continue
                     forward_message(INSTITUTE_CHAT_ID, chat_id, message["message_id"])
                     send_message(chat_id, "پیشنهاد شما برای بهبود برنامه جامع آموزشی مقدمات هوش مصنوعی با موفقیت ارسال شد. سپاسگزاریم.")
