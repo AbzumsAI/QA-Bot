@@ -47,7 +47,7 @@ def main():
                     continue
                 chat_id = message["chat"]["id"]
                 text = message.get("text", "").strip()
-                if text == "/start":
+                if text.startswith("/start"):
 
                     start_text = (
                         "سلام!\n\n"
@@ -59,6 +59,7 @@ def main():
                         "پیشنهاد شما برای سازنده بات ارسال خواهد شد.\n\n"
                         "اگر پیشنهادی برای بهبود برنامه‌ی جامع آموزشی مقدمات هوش مصنوعی دارید، می‌توانید از دستور /newsuggestion استفاده کنید.\n\n"
                     )
+
                     send_message(chat_id, start_text)
 
                     continue
