@@ -30,4 +30,4 @@ jobs:
 
       - name: Deploy to Server via SSH
         run: |
-          ssh -i ~/.ssh/id_ed25519 root@65.109.199.84 'bash ~/deploy.sh'
+          ssh -i ~/.ssh/id_ed25519 root@65.109.199.84 'bash ~/AbzumsAI/deploy.sh'
