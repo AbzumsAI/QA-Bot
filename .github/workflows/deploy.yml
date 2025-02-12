@@ -1,4 +1,5 @@
 name: Deploy Telegram Bot
+
 on:
   push:
     branches:
@@ -15,9 +16,17 @@ jobs:
       - name: Setup SSH Connection
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H 65.109.199.84 >> ~/.ssh/known_hosts
+          echo "Host 65.109.199.84
+                IdentityFile ~/.ssh/id_ed25519
+                IdentitiesOnly yes
+                StrictHostKeyChecking no" >> ~/.ssh/config
+
+      - name: Test SSH Connection
+        run: |
+          ssh -i ~/.ssh/id_ed25519 root@65.109.199.84 "echo 'SSH Connected Successfully'"
 
       - name: Deploy to Server via SSH
         run: |
