@@ -1,0 +1,24 @@
+name: Deploy Telegram Bot
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup SSH Connection
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 65.109.199.84 >> ~/.ssh/known_hosts
+
+      - name: Deploy to Server via SSH
+        run: |
+          ssh -i ~/.ssh/id_rsa root@65.109.199.84 'bash ~/deploy.sh'
