@@ -48,4 +48,4 @@ This is a Telegram bot for answering questions about AbzumsAI Educational Instit
 - **newfeature** - Sends your feature suggestion to the bot admin (your suggestion is forwarded with your chat info).
 - **newsuggestion** - Sends your improvement suggestion for the institute to the institute's chat.
 
-Enjoy using the bot and feel free to contribute with suggestions!
+Enjoy using the bot, and feel free to contribute with suggestions!
