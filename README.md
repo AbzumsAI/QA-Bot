@@ -9,8 +9,8 @@ This is a Telegram bot for answering questions about AbzumsAI Educational Instit
 - **Questions:** Displays a list of predefined questions.
 - **Random:** Returns a random question and answer.
 - **Search:** Lets you search for questions by a keyword. (Usage example: `search math`)
-- **Newfeature:** For sending a new feature suggestion. The original message is forwarded to the bot admin.
-- **Newsuggestion:** For sending improvement suggestions for the institute. This message is forwarded to the institute's chat.
+- **Newfeature:** To send a new feature suggestion. The original message is forwarded to the bot admin.
+- **Newsuggestion:** To send improvement suggestions for the institute. This message is forwarded to the institute's chat.
 
 ## Installation
 
@@ -48,4 +48,4 @@ This is a Telegram bot for answering questions about AbzumsAI Educational Instit
 - **newfeature** - Sends your feature suggestion to the bot admin (your suggestion is forwarded with your chat info).
 - **newsuggestion** - Sends your improvement suggestion for the institute to the institute's chat.
 
-Enjoy using the bot and feel free to contribute with suggestions!
+Enjoy using the bot, and feel free to contribute with suggestions!
