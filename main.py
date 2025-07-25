@@ -12,13 +12,15 @@ ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 INSTITUTE_CHAT_ID = os.getenv("INSTITUTE_CHAT_ID")
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
+
 def get_updates(offset=None):
-    url = f"{BASE_URL}/getUpdates"
+    url = f"{BASE_URL}/getUpdatess"
     params = {}
     if offset:
         params["offset"] = offset
     r = requests.get(url, params=params)
     return r.json()
+
 
 def send_message(chat_id, text, reply_markup=None):
     url = f"{BASE_URL}/sendMessage"
@@ -26,6 +28,7 @@ def send_message(chat_id, text, reply_markup=None):
     if reply_markup:
         params["reply_markup"] = reply_markup
     requests.get(url, params=params)
+
 
 def forward_message(to_chat_id, from_chat_id, message_id):
     url = f"{BASE_URL}/forwardMessage"
@@ -35,6 +38,7 @@ def forward_message(to_chat_id, from_chat_id, message_id):
         "message_id": message_id
     }
     requests.get(url, params=params)
+
 
 def main():
     offset = None
@@ -71,7 +75,7 @@ def main():
                         "نمایش پیام خوش‌آمدگویی و توضیحات کامل درباره بات و نحوه استفاده.\n\n"
                         "/help\n"
                         "نمایش راهنمای دستورات و توضیحات نحوه پرسیدن سوال.\n\n"
-                         "/questions\n"
+                        "/questions\n"
                         "نمایش لیست سوالات از پیش تعریف‌شده به همراه دستورالعمل استفاده.\n\n"
                         "/random\n"
                         "دریافت یک پرسش و پاسخ تصادفی با فاصله مناسب بین سوال و پاسخ.\n\n"
@@ -99,12 +103,14 @@ def main():
                     questions = list(qa.keys())
                     random_question = random.choice(questions)
                     answer = qa[random_question]
-                    send_message(chat_id, f"سوال: {random_question}\n\nپاسخ: {answer}")
+                    send_message(
+                        chat_id, f"سوال: {random_question}\n\nپاسخ: {answer}")
                     continue
                 if text.startswith("/search"):
                     parts = text.split(maxsplit=1)
                     if len(parts) < 2 or not parts[1].strip():
-                        send_message(chat_id, "برای استفاده از دستور /search، باید پس از کلمه /search، کلمه کلیدی را وارد کنید.\nمثال: /search ریاضی")
+                        send_message(
+                            chat_id, "برای استفاده از دستور /search، باید پس از کلمه /search، کلمه کلیدی را وارد کنید.\nمثال: /search ریاضی")
                         continue
                     keyword = parts[1].strip().lower()
                     matching = [q for q in qa.keys() if keyword in q.lower()]
@@ -114,36 +120,45 @@ def main():
                             result += f"{i}. {q}\n"
                         send_message(chat_id, result)
                     else:
-                        send_message(chat_id, "سوالی با این کلمه کلیدی یافت نشد.")
+                        send_message(
+                            chat_id, "سوالی با این کلمه کلیدی یافت نشد.")
                     continue
                 if text.startswith("/newfeature"):
                     parts = text.split(maxsplit=1)
                     if len(parts) < 2 or not parts[1].strip():
-                        send_message(chat_id, "برای ارسال پیشنهاد فیچر جدید، دستور را به صورت:\n/newfeature متن پیشنهاد\nارسال کنید.")
+                        send_message(
+                            chat_id, "برای ارسال پیشنهاد فیچر جدید، دستور را به صورت:\n/newfeature متن پیشنهاد\nارسال کنید.")
                         continue
-                    forward_message(ADMIN_CHAT_ID, chat_id, message["message_id"])
-                    send_message(chat_id, "پیشنهاد شما برای بهبود بات با موفقیت ارسال شد. سپاسگزاریم.")
+                    forward_message(ADMIN_CHAT_ID, chat_id,
+                                    message["message_id"])
+                    send_message(
+                        chat_id, "پیشنهاد شما برای بهبود بات با موفقیت ارسال شد. سپاسگزاریم.")
                     continue
                 if text.startswith("/newsuggestion"):
                     parts = text.split(maxsplit=1)
                     if len(parts) < 2 or not parts[1].strip():
-                        send_message(chat_id, "برای ارسال پیشنهاد بهبود برای موسسه، دستور را به صورت:\n/newsuggestion متن پیشنهاد\nارسال کنید.")
+                        send_message(
+                            chat_id, "برای ارسال پیشنهاد بهبود برای موسسه، دستور را به صورت:\n/newsuggestion متن پیشنهاد\nارسال کنید.")
                         continue
-                    forward_message(INSTITUTE_CHAT_ID, chat_id, message["message_id"])
-                    send_message(chat_id, "پیشنهاد شما برای بهبود برنامه جامع آموزشی مقدمات هوش مصنوعی با موفقیت ارسال شد. سپاسگزاریم.")
+                    forward_message(INSTITUTE_CHAT_ID, chat_id,
+                                    message["message_id"])
+                    send_message(
+                        chat_id, "پیشنهاد شما برای بهبود برنامه جامع آموزشی مقدمات هوش مصنوعی با موفقیت ارسال شد. سپاسگزاریم.")
                     continue
                 if text.isdigit():
                     idx = int(text) - 1
                     questions = list(qa.keys())
                     if 0 <= idx < len(questions):
                         selected_question = questions[idx]
-                        send_message(chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
+                        send_message(
+                            chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
                         continue
                 matching = [q for q in qa.keys() if text.lower() in q.lower()]
                 if matching:
                     if len(matching) == 1:
                         selected_question = matching[0]
-                        send_message(chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
+                        send_message(
+                            chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
                     else:
                         result = "سوالات مشابه پیدا شده:\n\n"
                         for i, q in enumerate(matching, 1):
@@ -152,6 +167,7 @@ def main():
                 else:
                     send_message(chat_id, "جوابی برای این سوال موجود نیست.")
         time.sleep(1)
+
 
 if __name__ == "__main__":
     main()
