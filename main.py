@@ -14,7 +14,7 @@ BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
 
 def get_updates(offset=None):
-    url = f"{BASE_URL}/getUpdatess"
+    url = f"{BASE_URL}/getUpdates"
     params = {}
     if offset:
         params["offset"] = offset
