@@ -55,3 +55,11 @@ The tests cover command parsing and text matching. Run them before changing the 
 ```bash
 python -m unittest discover -s tests
 ```
+
+For the full local check set:
+
+```bash
+python scripts/run_checks.py
+```
+
+Extra notes live in `docs`, and `.env.example` shows the environment names without real values.
