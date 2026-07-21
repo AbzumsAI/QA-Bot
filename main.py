@@ -34,11 +34,28 @@ def split_command(text):
     return command.split("@", 1)[0].lower(), argument.strip()
 
 
+def normalize_lookup_text(text):
+    return " ".join(text.strip().lower().split())
+
+
 def find_matching_questions(text, questions):
-    keyword = text.strip().lower()
+    keyword = normalize_lookup_text(text)
     if not keyword:
         return []
     return [question for question in questions if keyword in question.lower()]
+
+
+def build_numbered_lines(items):
+    return "".join(f"{index}. {item}\n" for index, item in enumerate(items, 1))
+
+
+def select_question_by_number(text, questions):
+    if not text.isdigit():
+        return None
+    index = int(text) - 1
+    if 0 <= index < len(questions):
+        return questions[index]
+    return None
 
 
 def get_updates(offset=None):
@@ -127,8 +144,7 @@ def main():
                 if command == "/questions":
                     qlist = "لیست سوالات (برای دریافت پاسخ، شماره یا متن سوال را ارسال کنید):\n\n"
                     questions = list(qa.keys())
-                    for i, q in enumerate(questions, 1):
-                        qlist += f"{i}. {q}\n"
+                    qlist += build_numbered_lines(questions)
                     send_message(chat_id, qlist)
                     continue
                 if command == "/random":
@@ -146,8 +162,7 @@ def main():
                     matching = find_matching_questions(argument, qa.keys())
                     if matching:
                         result = "سوالات پیدا شده:\n\n"
-                        for i, q in enumerate(matching, 1):
-                            result += f"{i}. {q}\n"
+                        result += build_numbered_lines(matching)
                         send_message(chat_id, result)
                     else:
                         send_message(
@@ -174,10 +189,9 @@ def main():
                         chat_id, "پیشنهاد شما برای بهبود برنامه جامع آموزشی مقدمات هوش مصنوعی با موفقیت ارسال شد. سپاسگزاریم.")
                     continue
                 if text.isdigit():
-                    idx = int(text) - 1
                     questions = list(qa.keys())
-                    if 0 <= idx < len(questions):
-                        selected_question = questions[idx]
+                    selected_question = select_question_by_number(text, questions)
+                    if selected_question:
                         send_message(
                             chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
                         continue
@@ -189,8 +203,7 @@ def main():
                             chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
                     else:
                         result = "سوالات مشابه پیدا شده:\n\n"
-                        for i, q in enumerate(matching, 1):
-                            result += f"{i}. {q}\n"
+                        result += build_numbered_lines(matching)
                         send_message(chat_id, result)
                 else:
                     send_message(chat_id, "جوابی برای این سوال موجود نیست.")
