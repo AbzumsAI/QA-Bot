@@ -10,34 +10,65 @@ load_dotenv()
 TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 INSTITUTE_CHAT_ID = os.getenv("INSTITUTE_CHAT_ID")
-BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
+REQUEST_TIMEOUT = int(os.getenv("TELEGRAM_REQUEST_TIMEOUT", "10"))
+POLL_TIMEOUT = int(os.getenv("TELEGRAM_POLL_TIMEOUT", "20"))
+
+
+def get_base_url():
+    if not TOKEN:
+        raise RuntimeError("TELEGRAM_API_TOKEN is not set")
+    return f"https://api.telegram.org/bot{TOKEN}"
+
+
+def telegram_request(method, params=None, timeout=REQUEST_TIMEOUT):
+    url = f"{get_base_url()}/{method}"
+    response = requests.get(url, params=params or {}, timeout=timeout)
+    response.raise_for_status()
+    return response.json()
+
+
+def split_command(text):
+    if not text.startswith("/"):
+        return None, text
+    command, _, argument = text.partition(" ")
+    return command.split("@", 1)[0].lower(), argument.strip()
+
+
+def find_matching_questions(text, questions):
+    keyword = text.strip().lower()
+    if not keyword:
+        return []
+    return [question for question in questions if keyword in question.lower()]
 
 
 def get_updates(offset=None):
-    url = f"{BASE_URL}/getUpdates"
-    params = {}
-    if offset:
+    params = {"timeout": POLL_TIMEOUT}
+    if offset is not None:
         params["offset"] = offset
-    r = requests.get(url, params=params)
-    return r.json()
+    try:
+        return telegram_request(
+            "getUpdates",
+            params=params,
+            timeout=POLL_TIMEOUT + REQUEST_TIMEOUT,
+        )
+    except requests.RequestException as error:
+        return {"ok": False, "description": str(error)}
 
 
 def send_message(chat_id, text, reply_markup=None):
-    url = f"{BASE_URL}/sendMessage"
     params = {"chat_id": chat_id, "text": text}
     if reply_markup:
         params["reply_markup"] = reply_markup
-    requests.get(url, params=params)
+    return telegram_request("sendMessage", params=params)
 
 
 def forward_message(to_chat_id, from_chat_id, message_id):
-    url = f"{BASE_URL}/forwardMessage"
     params = {
         "chat_id": to_chat_id,
         "from_chat_id": from_chat_id,
         "message_id": message_id
     }
-    requests.get(url, params=params)
+    return telegram_request("forwardMessage", params=params)
 
 
 def main():
@@ -52,7 +83,8 @@ def main():
                     continue
                 chat_id = message["chat"]["id"]
                 text = message.get("text", "").strip()
-                if text.startswith("/start"):
+                command, argument = split_command(text)
+                if command == "/start":
 
                     start_text = (
                         "سلام!\n\n"
@@ -68,7 +100,7 @@ def main():
                     send_message(chat_id, start_text)
 
                     continue
-                if text == "/help":
+                if command == "/help":
                     help_text = (
                         "دستورات موجود:\n\n"
                         "/start\n"
@@ -92,28 +124,26 @@ def main():
                     )
                     send_message(chat_id, help_text)
                     continue
-                if text == "/questions":
+                if command == "/questions":
                     qlist = "لیست سوالات (برای دریافت پاسخ، شماره یا متن سوال را ارسال کنید):\n\n"
                     questions = list(qa.keys())
                     for i, q in enumerate(questions, 1):
                         qlist += f"{i}. {q}\n"
                     send_message(chat_id, qlist)
                     continue
-                if text == "/random":
+                if command == "/random":
                     questions = list(qa.keys())
                     random_question = random.choice(questions)
                     answer = qa[random_question]
                     send_message(
                         chat_id, f"سوال: {random_question}\n\nپاسخ: {answer}")
                     continue
-                if text.startswith("/search"):
-                    parts = text.split(maxsplit=1)
-                    if len(parts) < 2 or not parts[1].strip():
+                if command == "/search":
+                    if not argument:
                         send_message(
                             chat_id, "برای استفاده از دستور /search، باید پس از کلمه /search، کلمه کلیدی را وارد کنید.\nمثال: /search ریاضی")
                         continue
-                    keyword = parts[1].strip().lower()
-                    matching = [q for q in qa.keys() if keyword in q.lower()]
+                    matching = find_matching_questions(argument, qa.keys())
                     if matching:
                         result = "سوالات پیدا شده:\n\n"
                         for i, q in enumerate(matching, 1):
@@ -123,9 +153,8 @@ def main():
                         send_message(
                             chat_id, "سوالی با این کلمه کلیدی یافت نشد.")
                     continue
-                if text.startswith("/newfeature"):
-                    parts = text.split(maxsplit=1)
-                    if len(parts) < 2 or not parts[1].strip():
+                if command == "/newfeature":
+                    if not argument:
                         send_message(
                             chat_id, "برای ارسال پیشنهاد فیچر جدید، دستور را به صورت:\n/newfeature متن پیشنهاد\nارسال کنید.")
                         continue
@@ -134,9 +163,8 @@ def main():
                     send_message(
                         chat_id, "پیشنهاد شما برای بهبود بات با موفقیت ارسال شد. سپاسگزاریم.")
                     continue
-                if text.startswith("/newsuggestion"):
-                    parts = text.split(maxsplit=1)
-                    if len(parts) < 2 or not parts[1].strip():
+                if command == "/newsuggestion":
+                    if not argument:
                         send_message(
                             chat_id, "برای ارسال پیشنهاد بهبود برای موسسه، دستور را به صورت:\n/newsuggestion متن پیشنهاد\nارسال کنید.")
                         continue
@@ -153,7 +181,7 @@ def main():
                         send_message(
                             chat_id, f"سوال: {selected_question}\n\nپاسخ: {qa[selected_question]}")
                         continue
-                matching = [q for q in qa.keys() if text.lower() in q.lower()]
+                matching = find_matching_questions(text, qa.keys())
                 if matching:
                     if len(matching) == 1:
                         selected_question = matching[0]
